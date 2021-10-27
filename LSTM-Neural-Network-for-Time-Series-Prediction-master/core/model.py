@@ -4,6 +4,7 @@ import numpy as np
 import datetime as dt
 from numpy import newaxis
 from core.utils import Timer
+import time
 from keras.layers import Dense, Activation, Dropout, LSTM
 from keras.models import Sequential, load_model
 from keras.callbacks import EarlyStopping, ModelCheckpoint
@@ -40,11 +41,14 @@ class Model():
 		self.model.compile(loss=configs['model']['loss'], optimizer=configs['model']['optimizer'])
 
 		print('[Model] Model Compiled')
+		print(self.model.summary())
 		timer.stop()
 
 	def train(self, x, y, epochs, batch_size, save_dir):
 		timer = Timer()
 		timer.start()
+		print('##############')
+		print(x.shape,y.shape)
 		print('[Model] Training Started')
 		print('[Model] %s epochs, %s batch size' % (epochs, batch_size))
 		

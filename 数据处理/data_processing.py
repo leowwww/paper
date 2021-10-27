@@ -26,7 +26,9 @@ if __name__ == "__main__":
     data_close = df.loc[: ,['close']]
     data_open = df.loc[: ,['open']]
     result = adf(data_close , data_open)
-    print('ADF检验：',result)
+    print('open-closeADF检验：',result)
+    print('openADF检验:',adfuller(np.array(data_open)))
+    print('closeADF检验:',adfuller(np.array(data_close)))
     data_close = np.array(data_close)
     data_close = data_close[:,0]
     data_open = np.array(data_open)
@@ -36,5 +38,5 @@ if __name__ == "__main__":
         data.append(data_close[i] - data_open[i])
     noise = white_noise(data)
     print('白噪声检验：',noise)
-    plt.plot(ljbox(data_open)[1])
-    plt.show()
+    '''plt.plot(ljbox(data_open)[1])
+    plt.show()'''
