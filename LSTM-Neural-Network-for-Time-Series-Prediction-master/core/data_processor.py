@@ -8,8 +8,10 @@ class DataLoader():
 
     def __init__(self, filename, split, cols):
         #dataframe = pd.read_csv(filename)
-        dataframe = pd.read_excel(filename , usecols=[0,1,2,3,4,5]) #新加 , usecols=[0,1,2,3,4,5]
-        dataframe.columns = ['date','open','high','low','close',"Volume"]#新加
+        #dataframe = pd.read_excel(filename , usecols=[0,1,2,3,4,5]) #新加 , usecols=[0,1,2,3,4,5]
+        #dataframe.columns = ['date','open','high','low','close',"Volume"]#新加
+        dataframe = pd.read_excel(filename , usecols=[1]) #新加 , usecols=[0,1,2,3,4,5]
+        dataframe.columns = ["open_close"]#新加
         i_split = int(len(dataframe) * split)
         self.data_train = dataframe.get(cols).values[:i_split]
         self.data_test  = dataframe.get(cols).values[i_split:]
@@ -17,6 +19,7 @@ class DataLoader():
         self.len_test   = len(self.data_test)
         self.len_train_windows = None
         self.a = 0
+        print(self.len_test , self.len_train , len(dataframe))
 
     def get_test_data(self, seq_len, normalise):
         '''
@@ -24,6 +27,7 @@ class DataLoader():
         Warning: batch method, not generative, make sure you have enough memory to
         load data, otherwise reduce size of the training split.
         '''
+        #没改
         data_windows = []
         for i in range(self.len_test - seq_len):
             
@@ -79,13 +83,23 @@ class DataLoader():
 
     def normalise_windows(self, window_data, single_window=False):
         '''Normalise window with a base value of zero'''
+        ##################改了
         normalised_data = []
         window_data = [window_data] if single_window else window_data
         a = []
         for window in window_data:
             normalised_window = []
-            for col_i in range(window.shape[1]):
-                normalised_col = [((float(p) / float(window[0, col_i])) - 1) for p in window[:, col_i]]
+            ##################改了
+            window_aver = max(np.array(window))
+            window_min = min(np.array(window))
+            for col_i in range(1):#window.shape[1]
+                ################改了
+                if window[0,0] == 0 and window_aver != 0:
+                    normalised_col = [((float(p) / float(window_aver)) - 1) for p in window[:, col_i]]
+                elif window[0,0] == 0 and window_aver == 0:
+                    normalised_col = [((float(p) / float(window_min)) - 1) for p in window[:, col_i]]
+                else:
+                    normalised_col = [((float(p) / float(window[0, col_i])) - 1) for p in window[:, col_i]]
                 #normalised_col = [((float(p) -2788)/(10774 - 2788)) for p in window[:, col_i]]
                 #print(window[0,0] , window[0,1])
                 normalised_window.append(normalised_col)

@@ -12,7 +12,7 @@ def exponential_smoothing(alpha, s):
     :return:       返回一次指数平滑模型参数， list
     '''
     s_temp = [0 for i in range(len(s))]
-    s_temp[0] = ( s[0] + s[1] + s[2] ) / 3
+    s_temp[0] = s[0]#( s[0] + s[1] + s[2] ) / 3
     for i in range(1, len(s)):
         s_temp[i] = alpha * s[i] + (1 - alpha) * s_temp[i-1]
     return s_temp
@@ -84,9 +84,16 @@ def mape(data_real , data_redisual):
     return result*100
 
 if __name__ == "__main__":
-    df = pd.read_excel("Data_AgTD20210604.xlsx",usecols = [0,1,2])
-    df.columns = ['date','open','high']
-    train, test = df.iloc[:, 1], df.iloc[2500:5000, 1]
+    '''df = pd.read_excel("Data_AgTD20210604.xlsx",usecols = [0,1,4])
+    df.columns = ['date','open','close']
+    split = int(len(df)*0.8)
+    train, test = df.iloc[:split, 1], df.iloc[split:, 1]'''
+###########################
+    df = pd.read_excel("open_close.xlsx",usecols = [1])
+    df.columns = ['open_close']
+    split = int(len(df)*0.8)
+    train, test = df.iloc[:split,0], df.iloc[split:,0]
+###########################
     alpha = 0.4
     train = np.array(train)
     test = np.array(test)
@@ -95,25 +102,32 @@ if __name__ == "__main__":
     l = len(train)
     for i in range(l):
         train_data.append(train[i])
-    sigle = compute_single(alpha, train)
-    a_doubel , b_double = compute_double(alpha , train)
+    sigle = compute_single(alpha, train)#计算的si
+    print(sigle[-10:] , train_data[-10:])
+    print(len(sigle) , len(train_data))
+    a_doubel , b_double = compute_double(alpha , train)#计算的si和ti
+
     a_triple, b_triple, c_triple = compute_triple(alpha , train)
     sigle_data = []
     double_data = []
     triple_data = []
     count  = 0
-    for i in range(l):
+    for i in range(len(a_doubel)):
         if i == 0:
             double_data.append(train[0])
             continue
         count = i 
         d = a_doubel[i] + b_double[i]*1
         double_data.append(d)
-    #预测后面的三个
-    for i in range(3):
+    print(double_data[:10] , train_data[:10])
+    print(len(double_data ),len(train_data))
+    #二次平滑预测后面的三个
+    pre_thre = []
+    for i in range(1,4):
         d = a_doubel[-1]+b_double[-1]*i
-        double_data.append(d)
+        pre_thre.append(d)
     count = 0
+#################holt winter
     for i in range(l):
         if i == 0:
             triple_data.append(train[0])
@@ -121,17 +135,18 @@ if __name__ == "__main__":
         count = i
         d = a_triple[i]+ b_triple[i] + c_triple[i]
         triple_data.append(d)
-    #预测后面的三个
+    l = 1000
+    plt.plot(range(l),sigle[:l],label ="sigel",color = 'r')
+    plt.plot(range(l),train_data[0:l],label = "real",color = 'g')
+    plt.plot(range(l),double_data[:l] , label = 'doubel',color = 'b')
+    #plt.plot(triple_data[:l] , label = 'tripe_data',color = 'y')
+    plt.legend()
+    plt.show()
+    #三次平滑预测后面的三个
     for i in range(3):
         d =  a_triple[-1]+ b_triple[-1]*i + c_triple[-1]*(i**2)
         triple_data.append(d)
-    #画图
-    '''plt.plot(train_data[2400:], label='real')
-    plt.plot(double_data[2400:],label='double')
-    plt.plot(triple_data[2400:], label='Holt-Winters')
-    plt.title('last_100_open')
-    plt.legend(loc='best')
-    plt.show()'''
+    
     residual_doubel =[]
     residual_triple = []
     for i in range(l):
@@ -160,9 +175,9 @@ if __name__ == "__main__":
     triple_mse = mse(residual_triple)
     print('holt_winter MSE:',triple_mse)
     #MAPE
-    double_mape = mape(train_data , residual_doubel)
+    double_mape = mape(train_data[:l], residual_doubel)
     print('二次平滑指数MAPE:',double_mape)
-    triple_mape = mape(train_data , residual_triple)
+    triple_mape = mape(train_data[:l] , residual_triple)
     print('holt_winter MAPE:',triple_mape)
     ###########################################################################################################
     #dn = pd.DataFrame({"residual_high": residual_doubel})

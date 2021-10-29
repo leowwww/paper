@@ -42,7 +42,7 @@ def main():
     )
 
     model = Model()
-    model.build_model(configs)
+    '''model.build_model(configs)
     x, y = data.get_train_data(
         seq_len=configs['data']['sequence_length'],
         normalise=configs['data']['normalise']
@@ -75,8 +75,8 @@ def main():
         batch_size=configs['training']['batch_size'],
         steps_per_epoch=steps_per_epoch,
         save_dir=configs['model']['save_dir']
-    )
-    #model.load_model('saved_models\\27102021-101842-e2.h5')
+    )'''
+    model.load_model('saved_models\\28102021-112154-e2.h5')
 
     x_test, y_test = data.get_test_data(
         seq_len=configs['data']['sequence_length'],
@@ -99,12 +99,18 @@ def main():
     for i in range(10):
        print( real_y[i],data_test[49+i][0])
     plot_results(predictions[:100], y_test[:100])
-    plt.plot(real_pre)
+    print(predictions)
+    plt.plot(predictions[:100])
+    plt.plot(y_test[:100])
+    plt.show()
+    print('MSE:',0.5*(np.sum (( np.array(y_test) - np.array(predictions))**2)))
+    print('MAD:',(np.sum (abs( np.array(y_test) - np.array(predictions) ) ))/len(real_y))
+    '''plt.plot(real_pre)
     plt.plot(real_y)
     plt.show()
     print(len(predictions),len(y_test))
-    print('MSE:',0.5*(np.sum (( np.array(y_test) - np.array(predictions))**2)))
-    print('MAD:',(np.sum (abs( np.array(y_test) - np.array(predictions) ) ))/len(real_y))
+    print('MSE:',0.5*(np.sum (( np.array(real_y) - np.array(real_pre))**2)))
+    print('MAD:',(np.sum (abs( np.array(real_y) - np.array(real_pre) ) ))/len(real_y))'''
 
 
 if __name__ == '__main__':
