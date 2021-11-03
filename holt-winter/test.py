@@ -82,6 +82,11 @@ def mape(data_real , data_redisual):
         sum += abs(data_redisual[i]/data_real[i])
     result = sum/len(data_real)
     return result*100
+def window(histor_data):
+    #####每一次都进行一次指数平滑,
+    #sigle = compute_single(0.4,histor_data)
+    a_doubel , b_double = compute_double(0.4 , histor_data)
+    return (a_doubel[-1]+b_double[-1])
 
 if __name__ == "__main__":
     '''df = pd.read_excel("Data_AgTD20210604.xlsx",usecols = [0,1,4])
@@ -115,7 +120,7 @@ if __name__ == "__main__":
     for i in range(len(a_doubel)):
         if i == 0:
             double_data.append(train[0])
-            continue
+            #continue
         count = i 
         d = a_doubel[i] + b_double[i]*1
         double_data.append(d)
@@ -135,7 +140,7 @@ if __name__ == "__main__":
         count = i
         d = a_triple[i]+ b_triple[i] + c_triple[i]
         triple_data.append(d)
-    l = 1000
+    l = 100
     plt.plot(range(l),sigle[:l],label ="sigel",color = 'r')
     plt.plot(range(l),train_data[0:l],label = "real",color = 'g')
     plt.plot(range(l),double_data[:l] , label = 'doubel',color = 'b')
@@ -149,15 +154,11 @@ if __name__ == "__main__":
     
     residual_doubel =[]
     residual_triple = []
-    for i in range(l):
+    for i in range(len(train_data)):
         d_doubel = train_data[i] - double_data[i]
         d_triple = train_data[i] - triple_data[i]
         residual_doubel.append(d_doubel)
         residual_triple.append(d_triple)
-    residual_doubel_triple = []
-    for i in range(l):
-        d = residual_triple[i] - residual_doubel[i]
-        residual_doubel_triple.append(d)
     '''plt.plot(residual_doubel , label = 'residual_doubel')
     #plt.plot(residual_doubel_triple,label = 'residual_triple',color = 'y')
     plt.title('residual_doubel_triple')
@@ -182,7 +183,7 @@ if __name__ == "__main__":
     ###########################################################################################################
     #dn = pd.DataFrame({"residual_high": residual_doubel})
     #dn.to_excel('residual_double_open.xlsx')s
-    origin_money = 10000
+    '''origin_money = 10000
     result = 10000
     sell_gap = 0
     i = 0
@@ -199,5 +200,18 @@ if __name__ == "__main__":
         sell_gap = 0
     year_profit = ((result - 10000)/13)/10000
     print('最后资金：',result)
-    print('平均年收益率:',year_profit , '%')
-    
+    print('平均年收益率:',year_profit , '%')'''
+    pred = []
+    calculation_data = list(train)
+    print(len(calculation_data),len(test))
+    for i in range(1000):
+        print('第:{}个'.format(i))
+        result = window(calculation_data)
+        calculation_data.append(result)
+        pred.append(result)
+    forcast = calculation_data[len(train):]
+    plt.plot(forcast[:1000],color = 'g')
+    plt.plot(test[:1000],color = 'r')
+    plt.legend()
+    plt.show()
+    print(forcast[:100] , test[:100])
