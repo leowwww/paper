@@ -61,7 +61,6 @@ def train(config, logger, train_and_valid_data):
             _train_X, _train_Y = _data[0].to(device),_data[1].to(device)
             optimizer.zero_grad()               # 训练前要将梯度信息置 0
             pred_Y, hidden_train = model(_train_X, hidden_train)    # 这里走的就是前向计算forward函数
-
             if not config.do_continue_train:
                 hidden_train = None             # 如果非连续训练，把hidden重置即可
             else:

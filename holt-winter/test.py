@@ -87,7 +87,23 @@ def window(histor_data):
     #sigle = compute_single(0.4,histor_data)
     a_doubel , b_double = compute_double(0.4 , histor_data)
     return (a_doubel[-1]+b_double[-1])
-
+def doubel_train(a_double , b_double):
+    double_data = []
+    for i in range(len(a_double)):
+        if i == 0:
+            double_data.append(train[0])
+            #continue
+        d = a_double[i] + b_double[i]*1
+        double_data.append(d)
+    return double_data[-1]
+def treble_train(a_treble , b_treble , c_treble):
+    for i in range(l):
+        if i == 0:
+            triple_data.append(train[0])
+            continue
+        d = a_treble[i]+ b_treble[i] + c_treble[i]
+        triple_data.append(d)
+    return triple_data[-1]
 if __name__ == "__main__":
     '''df = pd.read_excel("Data_AgTD20210604.xlsx",usecols = [0,1,4])
     df.columns = ['date','open','close']
@@ -99,39 +115,52 @@ if __name__ == "__main__":
     split = int(len(df)*0.8)
     train, test = df.iloc[:split,0], df.iloc[split:,0]
 ###########################
-    alpha = 0.4
+    alpha = 0.1
     train = np.array(train)
     test = np.array(test)
+    print(train[:10])
+    print(train.shape)
     train_data = []
     test_data = []
     l = len(train)
     for i in range(l):
         train_data.append(train[i])
     sigle = compute_single(alpha, train)#计算的si
-    print(sigle[-10:] , train_data[-10:])
-    print(len(sigle) , len(train_data))
-    a_doubel , b_double = compute_double(alpha , train)#计算的si和ti
-
+    pred_double = []
+    pred_double = []
+    for i in range(100):
+        a_double , b_double = compute_double(alpha , train_data)
+        pred_1 = a_double[-1]+b_double[-1]
+        print(len(train_data))
+        print(pred_1 , test[i])
+        train_data.append(test[i])
+        pred_double.append(pred_1)
+    l = 10
+    plt.plot(range(l),pred_double[:l],label ="double",color = 'r')
+    plt.plot(range(l),test[0:l],label = "real",color = 'g')
+    plt.legend()
+    plt.show()
+    train_data = list(train)
+    pred_treble = []
+    for i in range(100):
+        a_treble, b_treble, c_treble = compute_triple(alpha , train_data)
+        pred =a_treble[-1]+  c_treble[-1]
+        print(len(train_data))
+        print(pred , test[i])
+        train_data.append(test[i])
+        pred_treble.append(pred)
+    l = 100
+    plt.plot(range(l),pred_double[:l],label ="double",color = 'b')
+    plt.plot(range(l),pred_treble[:l],label ="treble",color = 'r')
+    plt.plot(range(l),test[0:l],label = "real",color = 'g')
+    plt.legend()
+    plt.show()
     a_triple, b_triple, c_triple = compute_triple(alpha , train)
     sigle_data = []
     double_data = []
     triple_data = []
     count  = 0
-    for i in range(len(a_doubel)):
-        if i == 0:
-            double_data.append(train[0])
-            #continue
-        count = i 
-        d = a_doubel[i] + b_double[i]*1
-        double_data.append(d)
-    print(double_data[:10] , train_data[:10])
-    print(len(double_data ),len(train_data))
-    #二次平滑预测后面的三个
     pre_thre = []
-    for i in range(1,4):
-        d = a_doubel[-1]+b_double[-1]*i
-        pre_thre.append(d)
-    count = 0
 #################holt winter
     for i in range(l):
         if i == 0:
@@ -139,17 +168,6 @@ if __name__ == "__main__":
             continue
         count = i
         d = a_triple[i]+ b_triple[i] + c_triple[i]
-        triple_data.append(d)
-    l = 100
-    plt.plot(range(l),sigle[:l],label ="sigel",color = 'r')
-    plt.plot(range(l),train_data[0:l],label = "real",color = 'g')
-    plt.plot(range(l),double_data[:l] , label = 'doubel',color = 'b')
-    #plt.plot(triple_data[:l] , label = 'tripe_data',color = 'y')
-    plt.legend()
-    plt.show()
-    #三次平滑预测后面的三个
-    for i in range(3):
-        d =  a_triple[-1]+ b_triple[-1]*i + c_triple[-1]*(i**2)
         triple_data.append(d)
     
     residual_doubel =[]

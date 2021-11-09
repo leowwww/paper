@@ -10,94 +10,69 @@ def RMSE(real , pred):
     for i in range(len(real)):
         sum += (real[i] - pred[i])**2
     return (sum/len(real))**0.5
-df = pd.read_excel("open_close.xlsx",usecols = [1])
-df.columns = ['open_close']
-split = int(len(df)*0.8)
-train, test = df.iloc[:split,0], df.iloc[split:,0]
-train = np.array(train)
-test = np.array(test)
-################归一化
-'''max_data = max(np.array(df))[0]
-min_data = min(np.array(df))[0]
-print(max_data,min_data)
-new_data = []
-print(np.array(df).shape)
-time.sleep(5)
-df = np.array(df)
-for i in range(len(df)):
-    new_data.append((df[i][0] - min_data)/(max_data - min_data))
-print(len(new_data))
-train , test = new_data[:split] , new_data[split:]
-train = np.array(train)
-test = np.array(test)'''
-##############分解
-'''decompose_result = seasonal_decompose(train[:400], model="add", period=70)
-print(decompose_result)
-plt.rcParams.update({'figure.figsize': (10, 10)})
-decompose_result.plot().suptitle('Multiplicative Decompose')
-plt.show()'''
-#####一次指数平滑
-'''once = SimpleExpSmoothing(train[:100]).fit(smoothing_level=0.6)
+if __name__ =='__main__':   
+    df = pd.read_excel("data\\lstm_residual.xlsx",usecols = [1])
+    df.columns = ['residual']
+    split = int(len(df)*0.8)
+    train, test = df.iloc[:split,0], df.iloc[split:,0]
+    train = np.array(train)
+    test = np.array(test)
+    for i in range(len(train)):
+        if abs(train[i])>50:
+            train[i] = 0
+    print(len(df) , len(train) , len(test))
+    ################归一化
+    '''max_data = max(np.array(df))[0]
+    min_data = min(np.array(df))[0]
+    print(max_data,min_data)
+    new_data = []
+    df = np.array(df)
+    for i in range(len(df)):
+        new_data.append((df[i][0] - min_data))
+    print(len(new_data))
+    train , test = new_data[:split] , new_data[split:]
+    train = np.array(train)
+    test = np.array(test)
+    print(train[:10])'''
+    # Holt’s Method
+    
+    fit1= ExponentialSmoothing(train, trend="add",seasonal="add",  seasonal_periods=10).fit()
+    a = fit1.forecast(100)
+    plt.plot(a[:100],label = 'predction')
+    plt.plot(test[:100] , label = 'real')
+    plt.legend()
+    plt.show()
+    p_d = []
+    train_data = train[-10:]
+    for i in range(100):
+        fit1 = ExponentialSmoothing(train_data, trend="add").fit()
+        #print(len(train_data))
+        pred = fit1.forecast(1)
+        p_d.append(pred[0])
+        train_data = list(train_data)
+        train_data.append(pred[0])
+        train_data = np.array(train_data)
+    plt.plot(p_d[:100] , color = 'r',label = 'predction')
+    plt.plot(test[:100], color = 'g',label = 'real')
+    plt.legend()
+    plt.show()
+    #fit2 = ExponentialSmoothing(data, trend="mul", seasonal=None).fit().fittedvalues
 
-once = once.fittedvalues
-print(len(once))
-plt.plot(once,label = 'once')
-plt.plot(train[:100] ,label = 'real')
-plt.legend()
-plt.show()
-data = pd.Series(train[:100])
-doubel = ExponentialSmoothing(data, trend='add' ).fit().fittedvalues
-#doubel_2= ExponentialSmoothing(train[:100], trend="mul", seasonal=None).fit().fittedvalues
-plt.plot(doubel,label = '2exp')
-plt.plot(train[:100],label = 'real')
-plt.legend()
-plt.show()
-
-third= ExponentialSmoothing(data, trend="add", seasonal="add", seasonal_periods=20).fit().fittedvalues
-plt.plot(third,label = '3exp')
-plt.plot(train[:100],label = 'real')
-plt.legend()
-plt.show()
-
-
-# Simple Exponential Smoothing
-data = train[:50]
-fit1 = SimpleExpSmoothing(data).fit(smoothing_level=0.2,optimized=False)
-# plot
-l1, = plt.plot(list(fit1.fittedvalues) + list(fit1.forecast(5)), marker='o')
-
-fit2 = SimpleExpSmoothing(data).fit(smoothing_level=0.6,optimized=False)
-# plot
-l2, = plt.plot(list(fit2.fittedvalues) + list(fit2.forecast(5)), marker='o')
-fit3 = SimpleExpSmoothing(data).fit()   
-# plot
-l3, = plt.plot(list(fit3.fittedvalues) + list(fit3.forecast(5)), marker='o')
-l4, = plt.plot(train[:55], marker='^')
-plt.legend(handles = [l1, l2, l3, l4], labels = ['a=0.2', 'a=0.6', 'auto', 'data'], loc = 'best', prop={'size': 7})
-plt.show()
-###########二次指数平滑
-data_sr = pd.Series(data)
-# Holt’s Method
-fit1= ExponentialSmoothing(train[:50], trend="add").fit()
-l1, = plt.plot(list(fit1.fittedvalues) + list(fit1.forecast(5)), marker='o')
-l4, = plt.plot(train[:55], marker='^')
-#fit2 = ExponentialSmoothing(data, trend="mul", seasonal=None).fit().fittedvalues
-plt.legend(handles = [l1, l4], labels = ['2exp','data'], loc = 'best', prop={'size': 7})
-plt.show()'''
-fit1= ExponentialSmoothing(train, trend="add",seasonal="add",  seasonal_periods=100).fit()#seasonal="add",  seasonal_periods=100
-'''plt.plot(fit1.fittedvalues[:100])
-plt.plot(train[:100])
-plt.show()'''
-
-'''l1, = plt.plot(list(fit1.forecast(100)[20:]), marker='o')
-l4, = plt.plot(test[20:100], marker='^')
-#fit2 = ExponentialSmoothing(data, trend="mul", seasonal=None).fit().fittedvalues
-plt.legend(handles = [l1, l4], labels = ['holt_winter','data'], loc = 'best', prop={'size': 9})
-plt.show()
-####计算mse'''
-
-pred = fit1.forecast(len(test))
-rmse = RMSE(test , pred)
-print('RMSE:{}'.format(rmse))
-pred = pd.DataFrame(pred)
-pred.to_excel('linear.xlsx')
+    #fit1= ExponentialSmoothing(train, trend="add",seasonal="add",  seasonal_periods=1000).fit()#seasonal="add",  seasonal_periods=100
+    #fit2 = ExponentialSmoothing(train, trend="add").fit()
+    train_data = train
+    train_data = list(train_data)
+    pred_data = []
+    for i in range(50):
+        fit = ExponentialSmoothing(train[:50+i], trend="add",seasonal="add",  seasonal_periods=10).fit()
+        prd = fit.forecast(1)
+        print(prd,test[i])
+        pred_data.append(prd)
+    plt.plot(pred_data[:50])
+    plt.plot(train[50:50+50])
+    plt.legend()
+    plt.show()
+    rmse = RMSE(test , pred_data)
+    print('RMSE:{}'.format(rmse))
+    pred = pd.DataFrame(pred_data)
+    pred.to_excel('linear_open.xlsx')

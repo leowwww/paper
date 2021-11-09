@@ -55,12 +55,12 @@ class Config:
     shuffle_train_data = True   # 是否对训练数据做shuffle
     use_cuda = False            # 是否使用GPU训练
 
-    train_data_rate = 0.95      # 训练数据占总体数据比例，测试数据就是 1-train_data_rate
+    train_data_rate = 0.7      # 训练数据占总体数据比例，测试数据就是 1-train_data_rate
     valid_data_rate = 0.15      # 验证数据占训练数据比例，验证集在训练过程使用，为了做模型和参数选择
 
     batch_size = 64
     learning_rate = 0.001
-    epoch = 2                 # 整个训练集被训练多少遍，不考虑早停的前提下
+    epoch = 20                # 整个训练集被训练多少遍，不考虑早停的前提下
     patience = 5                # 训练多少epoch，验证集没提升就停掉
     random_seed = 42            # 随机种子，保证可复现
 
@@ -81,7 +81,7 @@ class Config:
     model_name = "model_" + continue_flag + used_frame + model_postfix[used_frame]
 
     # 路径参数
-    train_data_path = "./data/open_close.xlsx"
+    train_data_path = "./data/Data_AgTD20210604.xlsx"
     model_save_path = "./checkpoint/" + used_frame + "/"
     figure_save_path = "./figure/"
     log_save_path = "./log/"
@@ -125,8 +125,9 @@ class Data:
 
     def get_train_and_valid_data(self):
         feature_data = self.norm_data[:self.train_num]
+        print(len(feature_data),self.data_num)
         label_data = self.norm_data[self.config.predict_day : self.config.predict_day + self.train_num,
-                                    self.config.label_in_feature_index]    # 将延后几天的数据作为label
+                                    self.config.label_in_feature_index]    # 将延后几天的数据作为label,标签y，预测后面1天的数据
         #print(feature_data.shape , label_data.shape)
 
         if not self.config.do_continue_train:
@@ -153,12 +154,14 @@ class Data:
 
     def get_test_data(self, return_label_data=False):
         feature_data = self.norm_data[self.train_num:]
-        sample_interval = min(feature_data.shape[0], self.config.time_step)     # 防止time_step大于测试集数量
+        sample_interval = min(feature_data.shape[0], self.config.time_step)     # 防止time_step大于测试集数量,是不可能的
         self.start_num_in_test = feature_data.shape[0] % sample_interval  # 这些天的数据不够一个sample_interval
         time_step_size = feature_data.shape[0] // sample_interval
 
         # 在测试数据中，每time_step行数据会作为一个样本，两个样本错开time_step行
         # 比如：1-20行，21-40行。。。到数据末尾。
+        print('###############')
+        print(self.start_num_in_test)
         test_x = [feature_data[self.start_num_in_test+i*sample_interval : self.start_num_in_test+(i+1)*sample_interval]
                    for i in range(time_step_size)]
         if return_label_data:       # 实际应用中的测试集是没有label数据的
@@ -202,6 +205,8 @@ def load_logger(config):
 def draw(config: Config, origin_data: Data, logger, predict_norm_data: np.ndarray):
     label_data = origin_data.data[origin_data.train_num + origin_data.start_num_in_test : ,
                                             config.label_in_feature_index]
+    ##############label_data是原始数据，但是长度不是简单的len(all)*0.2 还加了五个start_num_in_test,所以要从
+    print(origin_data.train_num + origin_data.start_num_in_test , len(label_data) , len(predict_norm_data),len(origin_data.data)*0.3 - 19)
     predict_data = predict_norm_data * origin_data.std[config.label_in_feature_index] + \
                    origin_data.mean[config.label_in_feature_index]   # 通过保存的均值和方差还原数据
     assert label_data.shape[0]==predict_data.shape[0], "The element number in origin and predicted data is different"
@@ -226,15 +231,25 @@ def draw(config: Config, origin_data: Data, logger, predict_norm_data: np.ndarra
     if not sys.platform.startswith('linux'):    # 无桌面的Linux下无法输出，如果是有桌面的Linux，如Ubuntu，可去掉这一行
         for i in range(label_column_num):
             plt.figure(i+1)                     # 预测数据绘制
-            plt.plot(label_X, label_data[:, i], label='label')
-            plt.plot(predict_X, predict_data[:, i], label='predict')
+            plt.plot( label_data[:100, i], label='label')
+            plt.plot( predict_data[:100, i], label='predict')
             plt.title("Predict stock {} price with {}".format(label_name[i], config.used_frame))
             logger.info("The predicted stock {} for the next {} day(s) is: ".format(label_name[i], config.predict_day) +
                   str(np.squeeze(predict_data[-config.predict_day:, i])))
             if config.do_figure_save:
                 plt.savefig(config.figure_save_path+"{}predict_{}_with_{}.png".format(config.continue_flag, label_name[i], config.used_frame))
-
+        plt.legend()
         plt.show()
+    pd.DataFrame(label_data).to_excel('data\\lstm_origin_data.xlsx')
+    pd.DataFrame(predict_data).to_excel('data\\lstm_result.xlsx')
+    pd.DataFrame(label_data - predict_data).to_excel('data\\lstm_residual.xlsx')
+    print('rmse:{}'.format(RMSE(label_data , predict_data)))
+def RMSE(real , pred):
+    sum = 0
+    for i in range(len(real)):
+        sum += (real[i] - pred[i])**2
+    return (sum/len(real))**0.5
+
 
 def main(config):
     logger = load_logger(config)
@@ -252,9 +267,11 @@ def main(config):
         if config.do_predict:
             test_X, test_Y = data_gainer.get_test_data(return_label_data=True)
             pred_result = predict(config, test_X)       # 这里输出的是未还原的归一化预测数据
+            print('########################')
             print(test_X.shape)
             print(len(pred_result))
             draw(config, data_gainer, logger, pred_result)
+
     except Exception:
         logger.error("Run Error", exc_info=True)
 
