@@ -8,10 +8,9 @@ class DataLoader():
 
     def __init__(self, filename, split, cols):
         #dataframe = pd.read_csv(filename)
-        dataframe = pd.read_excel(filename , usecols=[0,1,2,3,4,5]) #新加 , usecols=[0,1,2,3,4,5]
-        dataframe.columns = ['date','open','high','low','close',"Volume"]#新加
-        '''dataframe = pd.read_excel(filename , usecols=[1,4]) #新加 , usecols=[0,1,2,3,4,5]
-        dataframe.columns = ["open","close"]#新加'''
+        dataframe = pd.read_excel(filename , usecols=[1,2,3]) #新加 , usecols=[0,1,2,3,4,5]
+        #dataframe.columns = ['date','open','high','low','close',"Volume"]#新加
+        dataframe.columns = ["lstm","holt_winter","real_data"] #"lstm","holt_winter","real_data"
         i_split = int(len(dataframe) * split)
         self.data_train = dataframe.get(cols).values[:i_split]
         self.data_test  = dataframe.get(cols).values[i_split:]
@@ -19,6 +18,7 @@ class DataLoader():
         self.len_test   = len(self.data_test)
         self.len_train_windows = None
         self.a = 0
+        print(dataframe.shape , self.len_train , self.len_test)
 
     def get_test_data(self, seq_len, normalise):
         '''
@@ -34,7 +34,7 @@ class DataLoader():
         data_windows = np.array(data_windows).astype(float)#转换数组元素类型
         data_windows = self.normalise_windows(data_windows, single_window=False) if normalise else data_windows
         x = data_windows[:, :-1]
-        y = data_windows[:, -1, [0]]
+        y = data_windows[:, -1, [-1]]
         return x,y
 
     def get_train_data(self, seq_len, normalise):
@@ -93,12 +93,6 @@ class DataLoader():
             window_min = min(np.array(window))'''
             for col_i in range(window.shape[1]):#window.shape[1]
                 ################改了
-                '''if window[0,0] == 0 and window_aver != 0:
-                    normalised_col = [((float(p) / float(window_aver)) - 1) for p in window[:, col_i]]
-                elif window[0,0] == 0 and window_aver == 0:
-                    normalised_col = [((float(p) / float(window_min)) - 1) for p in window[:, col_i]]
-                else:
-                    normalised_col = [((float(p) / float(window[0, col_i])) - 1) for p in window[:, col_i]]'''
                 normalised_col = [((float(p) / float(window[0, col_i])) - 1) for p in window[:, col_i]]
                 #print(window[0,0] , window[0,1])
                 normalised_window.append(normalised_col)
