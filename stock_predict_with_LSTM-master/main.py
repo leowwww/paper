@@ -81,7 +81,7 @@ class Config:
     model_name = "model_" + continue_flag + used_frame + model_postfix[used_frame]
 
     # 路径参数
-    train_data_path = "./data/Data_AgTD20210604.xlsx"
+    train_data_path = "./data/DATA_AU_TDX.xlsx"
     model_save_path = "./checkpoint/" + used_frame + "/"
     figure_save_path = "./figure/"
     log_save_path = "./log/"
@@ -160,8 +160,6 @@ class Data:
 
         # 在测试数据中，每time_step行数据会作为一个样本，两个样本错开time_step行
         # 比如：1-20行，21-40行。。。到数据末尾。
-        print('###############')
-        print(self.start_num_in_test)
         test_x = [feature_data[self.start_num_in_test+i*sample_interval : self.start_num_in_test+(i+1)*sample_interval]
                    for i in range(time_step_size)]
         if return_label_data:       # 实际应用中的测试集是没有label数据的
@@ -231,8 +229,8 @@ def draw(config: Config, origin_data: Data, logger, predict_norm_data: np.ndarra
     if not sys.platform.startswith('linux'):    # 无桌面的Linux下无法输出，如果是有桌面的Linux，如Ubuntu，可去掉这一行
         for i in range(label_column_num):
             plt.figure(i+1)                     # 预测数据绘制
-            plt.plot( label_data[:100, i], label='label')
-            plt.plot( predict_data[:100, i], label='predict')
+            plt.plot( label_X[:100],label_data[:100, i], label='label')
+            plt.plot( predict_X[:100],predict_data[:100, i], label='predict')
             plt.title("Predict stock {} price with {}".format(label_name[i], config.used_frame))
             logger.info("The predicted stock {} for the next {} day(s) is: ".format(label_name[i], config.predict_day) +
                   str(np.squeeze(predict_data[-config.predict_day:, i])))
@@ -242,7 +240,7 @@ def draw(config: Config, origin_data: Data, logger, predict_norm_data: np.ndarra
         plt.show()
     pd.DataFrame(label_data).to_excel('data\\lstm_origin_data.xlsx')
     pd.DataFrame(predict_data).to_excel('data\\lstm_result.xlsx')
-    pd.DataFrame(label_data - predict_data).to_excel('data\\lstm_residual.xlsx')
+    pd.DataFrame(label_data[1:] - predict_data[:-1]).to_excel('data\\lstm_residual.xlsx')###########改
     print('rmse:{}'.format(RMSE(label_data , predict_data)))
 def RMSE(real , pred):
     sum = 0
@@ -260,13 +258,12 @@ def main(config):
         if config.do_train:
             train_X, valid_X, train_Y, valid_Y = data_gainer.get_train_and_valid_data()
             test_X, test_Y = data_gainer.get_test_data(return_label_data=True)
-            print(test_X.shape)
-            print(train_X.shape , valid_X.shape , train_Y.shape , valid_Y.shape)
             train(config, logger, [train_X, train_Y, valid_X, valid_Y])
 
         if config.do_predict:
             test_X, test_Y = data_gainer.get_test_data(return_label_data=True)
             pred_result = predict(config, test_X)       # 这里输出的是未还原的归一化预测数据
+            print('预测下一点结果为：{}'.format(pred_result[-1]))
             print('########################')
             print(test_X.shape)
             print(len(pred_result))

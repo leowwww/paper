@@ -1,3 +1,4 @@
+from numpy.core.numeric import roll
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -55,12 +56,24 @@ if __name__ == "__main__":
     data = np.array(df)
     print('adf:{}'.format(adfuller(data)))
     print('white:{}'.format(ljbox(data , lags=1,boxpierce=False)))'''
+    ###############检查holt_winters的效果
+    nor = pd.read_excel('AU_data\\normal_result.xlsx' , usecols=[1])
+    ro = pd.read_excel('AU_data\\roll_result.xlsx' , usecols=[1])
+    ro_14 = pd.read_excel('AU_data\\roll_14_result.xlsx' , usecols=[1])
+    real = pd.read_excel('AU_data\\lstm_residual.xlsx',usecols=[1])[-5568:]
+    print(len(nor) , len(ro) , len(real))
+    nor = np.array(nor)
+    ro = np.array(ro)
+    real = np.array(real)
+    ro_14 = np.array(ro_14)
+    print("nor_rmse:{}".format(RMSE(real , nor)))
+    print("ro_rmse:{}".format(RMSE(real , ro)))
+    print("ro_14_rmse:{}".format(RMSE(real , ro_14)))
+    
     ##############合并数据集
-    holt_winter = pd.read_excel('holt-winters-result.xlsx',usecols=[1])
-    lstm_data = pd.read_excel('lstm_result.xlsx',usecols=[1])[-6725:]
-    real_data = pd.read_excel('lstm_origin_data.xlsx',usecols=[1])[-6725:]
-    print(real_data.head())
-    print(lstm_data.head())
+    holt_winter = pd.read_excel('AU_data\\roll_result.xlsx' , usecols=[1])#效果没有roll_7好
+    lstm_data = pd.read_excel('AU_data\\lstm_result.xlsx',usecols=[1])[-5569:-1]#最后一个是明天的值
+    real_data = pd.read_excel('AU_data\\lstm_origin_data.xlsx',usecols=[1])[-5568:]
     print(len(holt_winter) , len(lstm_data) , len(real_data))
     lstm_data = np.array(lstm_data)
     real_data = np.array(real_data)
@@ -71,15 +84,16 @@ if __name__ == "__main__":
     '''a = pd.DataFrame({'lstm':list(lstm_data[:,0]) , 'holt_winter':list(holt_winter[:,0]) , 'real_data':list(real_data[:,0])})
     a.to_excel('hybrid_data.xlsx')'''
 
-    plt.plot(real_data[:100] , label = 'real_data')
-    plt.plot(lstm_data[:100], label = 'lstm')
-    plt.plot(jiejie_data[:100], label = 'hybrid_model')
+    plt.plot(real_data[:] , label = 'real_data')
+    plt.plot(lstm_data[:], label = 'lstm')
+    plt.plot(jiejie_data[:], label = 'hybrid_model')
     plt.legend()
     plt.show()
     print('lstm rmse:{}'.format( RMSE(real_data , lstm_data)[0] ))
-    print('hybird rmse:{}'.format( RMSE(real_data ,jiejie_data)[0] ))
+    print('hybird rmse:{}'.format( RMSE(real_data ,jiejie_data)[0]))
     print('lstm MAPE:{}'.format( MAPE(real_data , lstm_data)[0] ))
     print('hybird MAPE:{}'.format( MAPE(real_data ,jiejie_data)[0] ))
     print('lstm FA:{}%'.format( 100 - 100*MAPE(real_data , lstm_data)[0] ))
     print('hybird FA:{}%'.format( 100 - 100*MAPE(real_data ,jiejie_data)[0] ))
+    ##############结论是ro_7效果最好
 

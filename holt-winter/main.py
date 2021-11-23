@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from numpy.testing._private.utils import decorate_methods
+from scipy.optimize._trustregion_constr.tr_interior_point import tr_interior_point
 from statsmodels.tsa.holtwinters import ExponentialSmoothing, SimpleExpSmoothing, Holt
 import pandas as pd
 import numpy as np
@@ -10,6 +11,11 @@ def RMSE(real , pred):
     for i in range(len(real)):
         sum += (real[i] - pred[i])**2
     return (sum/len(real))**0.5
+def MAPE(real , pred):
+    sum = 0 
+    for i in range(len(real)):
+        sum += abs((pred[i] - real[i]) / real[i])
+    return sum/len(real)
 if __name__ =='__main__':   
     df = pd.read_excel("data\\lstm_residual.xlsx",usecols = [1])
     df.columns = ['residual']
@@ -37,51 +43,35 @@ if __name__ =='__main__':
     # Holt’s Method
     
     fit1= ExponentialSmoothing(train, trend="add",seasonal="add",  seasonal_periods=1000).fit()
-    fit2 =  ExponentialSmoothing(train, trend="add").fit()
-    b = fit1.predict(start = 0 , end = len(test))
-    a = fit2.predict(start = 0 , end = len(test))
-    plt.plot(b,label = 'predction')
-    #plt.plot(test, label = 'real')
-    plt.plot(a , label = '2exp')
-    #plt.plot(a[:100] , label = 'values')
-    plt.legend()
-    plt.show()
-    b = pd.DataFrame(b)
-    b.to_excel('holt-winters-result.xlsx')
-    p_d = []
+    #fit2 =  ExponentialSmoothing(train, trend="add").fit()
+    ########滚动预测
+    test_num = len(test)
+    test_star = test_num % 14
     train_data = train
-    for i in range(100):
-        fit1 = ExponentialSmoothing(train_data, trend="add").fit()
-        #print(len(train_data))
-        pred = fit1.predict(start = 0 , end = len(test))
-        #print(len(pred) , len(train_data))
-        p_d.append(pred[0])
-        train_data = list(train_data)
-        train_data.append(pred[-1])
-        train_data = np.array(train_data)
-    plt.plot(p_d[:100] , color = 'r',label = 'predction')
-    plt.plot(test[:100], color = 'g',label = 'real')
+    pred = []
+    b = fit1.forecast(test_star)#start = 0 , end = len(test)
+    for i in range(test_star):
+        pred.append(b[i])
+    print(pred)
+    train_data = np.append(train_data , test[:test_star])
+    print(len(train_data))
+    for i in range(test_star , test_num , 14):
+        print(i,len(pred))
+        b = ExponentialSmoothing(train_data, trend="add",seasonal="add",  seasonal_periods=1000).fit().forecast(14)
+        for j in range(14):
+            pred.append(b[0])
+        train_data=np.append(train_data,test[i:i+14])
+    #################################
+    b = fit1.predict(start = len(train) , end = len(train)+100)
+    a = fit1.forecast(100)
+    #b.to_excel('normal_result.xlsx')
+    pred  = pd.DataFrame(pred)
+    pred.to_excel('roll_result.xlsx')
+    '''plt.plot(b[:100],label = 'forecast')
+    plt.plot(test[:100], label = 'real')
+    plt.plot(a , label = 'pred')
     plt.legend()
-    plt.show()
-    #fit2 = ExponentialSmoothing(data, trend="mul", seasonal=None).fit().fittedvalues
+    plt.show()'''
+    '''b = pd.DataFrame(b)
+    b.to_excel('holt-winters-result.xlsx')'''
 
-    #fit1= ExponentialSmoothing(train, trend="add",seasonal="add",  seasonal_periods=1000).fit()#seasonal="add",  seasonal_periods=100
-    #fit2 = ExponentialSmoothing(train, trend="add").fit()
-    train_data = train
-    p_d = []
-    for i in range(50):
-        fit = ExponentialSmoothing(train_data, trend="add",seasonal="add",  seasonal_periods=1000).fit()
-        pred = fit1.predict(1)
-        print(pred[0])
-        p_d.append(pred[0])
-        train_data = list(train_data)
-        train_data.append(pred[0])
-        train_data = np.array(train_data)
-    plt.plot(p_d[:50])
-    plt.plot(test[:50])
-    plt.legend()
-    plt.show()
-    rmse = RMSE(test[:50] , p_d)
-    print('RMSE:{}'.format(rmse))
-    #pred = pd.DataFrame(pred_data)
-    #pred.to_excel('linear_open.xlsx')
