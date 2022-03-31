@@ -32,7 +32,7 @@ else:
 
 class Config:
     # 数据参数
-    feature_columns = [1]   # 要作为feature的列，按原数据从0开始计算，也可以用list 如 [2,4,6,8] 设置
+    feature_columns = [1,4]   # 要作为feature的列，按原数据从0开始计算，也可以用list 如 [2,4,6,8] 设置
     label_columns = [1]               # 要预测的列，按原数据从0开始计算, 如同时预测第四，五列 最低价和最高价
     # label_in_feature_index = [feature_columns.index(i) for i in label_columns]  # 这样写不行
     label_in_feature_index = (lambda x,y: [x.index(i) for i in y])(feature_columns, label_columns)  # 因为feature不一定从0开始
@@ -119,7 +119,7 @@ class Data:
                                     usecols=self.config.feature_columns)
         else:
             init_data = pd.read_excel(self.config.train_data_path, usecols=self.config.feature_columns)
-            init_data.columns=["open_close"]
+            init_data.columns=["open",'close']
         
         return init_data.values, init_data.columns.tolist()     # .columns.tolist() 是获取列名
 
@@ -238,9 +238,9 @@ def draw(config: Config, origin_data: Data, logger, predict_norm_data: np.ndarra
                 plt.savefig(config.figure_save_path+"{}predict_{}_with_{}.png".format(config.continue_flag, label_name[i], config.used_frame))
         plt.legend()
         plt.show()
-    pd.DataFrame(label_data).to_excel('data\\lstm_origin_data.xlsx')
-    pd.DataFrame(predict_data).to_excel('data\\lstm_result.xlsx')
-    pd.DataFrame(label_data[1:] - predict_data[:-1]).to_excel('data\\lstm_residual.xlsx')###########改
+    pd.DataFrame(label_data).to_excel('data\\lstm_origin_data(2dim).xlsx')
+    pd.DataFrame(predict_data).to_excel('data\\lstm_result(2dim).xlsx')
+    pd.DataFrame(label_data[1:] - predict_data[:-1]).to_excel('data\\lstm_residual(2dim).xlsx')###########改
     print('rmse:{}'.format(RMSE(label_data , predict_data)))
 def RMSE(real , pred):
     sum = 0

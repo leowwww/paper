@@ -45,28 +45,35 @@ if __name__ =='__main__':
     fit1= ExponentialSmoothing(train, trend="add",seasonal="add",  seasonal_periods=1000).fit()
     #fit2 =  ExponentialSmoothing(train, trend="add").fit()
     ########滚动预测
+    roll_num = 2
     test_num = len(test)
-    test_star = test_num % 14
+    test_star = test_num % roll_num
     train_data = train
     pred = []
-    b = fit1.forecast(test_star)#start = 0 , end = len(test)
-    for i in range(test_star):
-        pred.append(b[i])
-    print(pred)
-    train_data = np.append(train_data , test[:test_star])
+    if test_star !=0:
+        pred = []
+        b = fit1.forecast(test_star)#start = 0 , end = len(test)
+        for i in range(test_star):
+            pred.append(b[i])
+        print(pred)
+        train_data = np.append(train_data , test[:test_star])
     print(len(train_data))
-    for i in range(test_star , test_num , 14):
+    for i in range(test_star , test_num , roll_num):
         print(i,len(pred))
-        b = ExponentialSmoothing(train_data, trend="add",seasonal="add",  seasonal_periods=1000).fit().forecast(14)
-        for j in range(14):
-            pred.append(b[0])
-        train_data=np.append(train_data,test[i:i+14])
+        b = ExponentialSmoothing(train_data, trend="add",seasonal="add",  seasonal_periods=1000).fit().forecast(roll_num)
+        for j in range(roll_num):
+            pred.append(b[j])
+        train_data=np.append(train_data,test[i:i+roll_num])
+
+
     #################################
+
+
     b = fit1.predict(start = len(train) , end = len(train)+100)
     a = fit1.forecast(100)
     #b.to_excel('normal_result.xlsx')
     pred  = pd.DataFrame(pred)
-    pred.to_excel('roll_result.xlsx')
+    pred.to_excel('roll_{}_result.xlsx'.format(roll_num))
     '''plt.plot(b[:100],label = 'forecast')
     plt.plot(test[:100], label = 'real')
     plt.plot(a , label = 'pred')
