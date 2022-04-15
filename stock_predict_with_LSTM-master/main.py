@@ -32,7 +32,7 @@ else:
 
 class Config:
     # 数据参数
-    feature_columns = [1,4]   # 要作为feature的列，按原数据从0开始计算，也可以用list 如 [2,4,6,8] 设置
+    feature_columns = [1]   # 要作为feature的列，按原数据从0开始计算，也可以用list 如 [2,4,6,8] 设置
     label_columns = [1]               # 要预测的列，按原数据从0开始计算, 如同时预测第四，五列 最低价和最高价
     # label_in_feature_index = [feature_columns.index(i) for i in label_columns]  # 这样写不行
     label_in_feature_index = (lambda x,y: [x.index(i) for i in y])(feature_columns, label_columns)  # 因为feature不一定从0开始
@@ -60,7 +60,7 @@ class Config:
 
     batch_size = 64
     learning_rate = 0.001
-    epoch = 20                # 整个训练集被训练多少遍，不考虑早停的前提下
+    epoch = 30                # 整个训练集被训练多少遍，不考虑早停的前提下
     patience = 5                # 训练多少epoch，验证集没提升就停掉
     random_seed = 42            # 随机种子，保证可复现
 
@@ -81,7 +81,7 @@ class Config:
     model_name = "model_" + continue_flag + used_frame + model_postfix[used_frame]
 
     # 路径参数
-    train_data_path = "./data/DATA_AU_TDX.xlsx"
+    train_data_path = "./data/DATA_AU_TDX.xlsx"#DATA_AU_TDX
     model_save_path = "./checkpoint/" + used_frame + "/"
     figure_save_path = "./figure/"
     log_save_path = "./log/"
@@ -119,13 +119,14 @@ class Data:
                                     usecols=self.config.feature_columns)
         else:
             init_data = pd.read_excel(self.config.train_data_path, usecols=self.config.feature_columns)
-            init_data.columns=["open",'close']
+            init_data.columns=["open"]####################
         
-        return init_data.values, init_data.columns.tolist()     # .columns.tolist() 是获取列名
+        return init_data.values, init_data.columns.tolist()      # .columns.tolist() 是获取列名
 
     def get_train_and_valid_data(self):
         feature_data = self.norm_data[:self.train_num]
         print(len(feature_data),self.data_num)
+        #exit(0)
         label_data = self.norm_data[self.config.predict_day : self.config.predict_day + self.train_num,
                                     self.config.label_in_feature_index]    # 将延后几天的数据作为label,标签y，预测后面1天的数据
         #print(feature_data.shape , label_data.shape)
@@ -150,6 +151,7 @@ class Data:
         train_x, valid_x, train_y, valid_y = train_test_split(train_x, train_y, test_size=self.config.valid_data_rate,
                                                               random_state=self.config.random_seed,
                                                               shuffle=self.config.shuffle_train_data)   # 划分训练和验证集，并打乱
+        #print(len(valid_x) , len(train_x))
         return train_x, valid_x, train_y, valid_y
 
     def get_test_data(self, return_label_data=False):
