@@ -1,10 +1,5 @@
 # -*- coding: UTF-8 -*-
 """
-@author: hichenway
-@知乎: 海晨威
-@contact: lyshello123@163.com
-@time: 2020/5/9 17:00
-@license: Apache
 主程序：包括配置，数据读取，日志记录，绘图，模型训练和预测
 """
 
@@ -55,12 +50,12 @@ class Config:
     shuffle_train_data = True   # 是否对训练数据做shuffle
     use_cuda = False            # 是否使用GPU训练
 
-    train_data_rate = 0.7      # 训练数据占总体数据比例，测试数据就是 1-train_data_rate
+    train_data_rate = 0.6      # 训练数据占总体数据比例，测试数据就是 1-train_data_rate
     valid_data_rate = 0.15      # 验证数据占训练数据比例，验证集在训练过程使用，为了做模型和参数选择
 
     batch_size = 64
     learning_rate = 0.001
-    epoch = 30                # 整个训练集被训练多少遍，不考虑早停的前提下
+    epoch = 100                # 整个训练集被训练多少遍，不考虑早停的前提下
     patience = 5                # 训练多少epoch，验证集没提升就停掉
     random_seed = 42            # 随机种子，保证可复现
 
@@ -81,7 +76,7 @@ class Config:
     model_name = "model_" + continue_flag + used_frame + model_postfix[used_frame]
 
     # 路径参数
-    train_data_path = "./data/DATA_AU_TDX.xlsx"#DATA_AU_TDX
+    train_data_path = "./data/emd_imfs.xlsx"
     model_save_path = "./checkpoint/" + used_frame + "/"
     figure_save_path = "./figure/"
     log_save_path = "./log/"
@@ -119,14 +114,13 @@ class Data:
                                     usecols=self.config.feature_columns)
         else:
             init_data = pd.read_excel(self.config.train_data_path, usecols=self.config.feature_columns)
-            init_data.columns=["open"]####################
+            init_data.columns=["open_close"]
         
-        return init_data.values, init_data.columns.tolist()      # .columns.tolist() 是获取列名
+        return init_data.values, init_data.columns.tolist()     # .columns.tolist() 是获取列名
 
     def get_train_and_valid_data(self):
         feature_data = self.norm_data[:self.train_num]
-        print(len(feature_data),self.data_num)
-        #exit(0)
+        #print(len(feature_data),self.data_num)
         label_data = self.norm_data[self.config.predict_day : self.config.predict_day + self.train_num,
                                     self.config.label_in_feature_index]    # 将延后几天的数据作为label,标签y，预测后面1天的数据
         #print(feature_data.shape , label_data.shape)
@@ -151,7 +145,6 @@ class Data:
         train_x, valid_x, train_y, valid_y = train_test_split(train_x, train_y, test_size=self.config.valid_data_rate,
                                                               random_state=self.config.random_seed,
                                                               shuffle=self.config.shuffle_train_data)   # 划分训练和验证集，并打乱
-        #print(len(valid_x) , len(train_x))
         return train_x, valid_x, train_y, valid_y
 
     def get_test_data(self, return_label_data=False):
@@ -162,6 +155,8 @@ class Data:
 
         # 在测试数据中，每time_step行数据会作为一个样本，两个样本错开time_step行
         # 比如：1-20行，21-40行。。。到数据末尾。
+        # print('###############')
+        # print(self.start_num_in_test)
         test_x = [feature_data[self.start_num_in_test+i*sample_interval : self.start_num_in_test+(i+1)*sample_interval]
                    for i in range(time_step_size)]
         if return_label_data:       # 实际应用中的测试集是没有label数据的
@@ -206,7 +201,8 @@ def draw(config: Config, origin_data: Data, logger, predict_norm_data: np.ndarra
     label_data = origin_data.data[origin_data.train_num + origin_data.start_num_in_test : ,
                                             config.label_in_feature_index]
     ##############label_data是原始数据，但是长度不是简单的len(all)*0.2 还加了五个start_num_in_test,所以要从
-    print(origin_data.train_num + origin_data.start_num_in_test , len(label_data) , len(predict_norm_data),len(origin_data.data)*0.3 - 19)
+    
+    #print(origin_data.train_num + origin_data.start_num_in_test , len(label_data) , len(predict_norm_data),len(origin_data.data)*0.3 - 19)
     predict_data = predict_norm_data * origin_data.std[config.label_in_feature_index] + \
                    origin_data.mean[config.label_in_feature_index]   # 通过保存的均值和方差还原数据
     assert label_data.shape[0]==predict_data.shape[0], "The element number in origin and predicted data is different"
@@ -227,22 +223,29 @@ def draw(config: Config, origin_data: Data, logger, predict_norm_data: np.ndarra
 
     label_X = range(origin_data.data_num - origin_data.train_num - origin_data.start_num_in_test)
     predict_X = [ x + config.predict_day for x in label_X]
+    # print(label_X[:10])
+    # print(predict_X[:10])
 
     if not sys.platform.startswith('linux'):    # 无桌面的Linux下无法输出，如果是有桌面的Linux，如Ubuntu，可去掉这一行
         for i in range(label_column_num):
             plt.figure(i+1)                     # 预测数据绘制
-            plt.plot( label_X[:100],label_data[:100, i], label='label')
-            plt.plot( predict_X[:100],predict_data[:100, i], label='predict')
+            plt.plot( label_X, label_data[:, i], label='label')
+            plt.plot( predict_X,predict_data[:, i], label='predict')
             plt.title("Predict stock {} price with {}".format(label_name[i], config.used_frame))
             logger.info("The predicted stock {} for the next {} day(s) is: ".format(label_name[i], config.predict_day) +
                   str(np.squeeze(predict_data[-config.predict_day:, i])))
             if config.do_figure_save:
                 plt.savefig(config.figure_save_path+"{}predict_{}_with_{}.png".format(config.continue_flag, label_name[i], config.used_frame))
         plt.legend()
-        plt.show()
-    pd.DataFrame(label_data).to_excel('data\\lstm_origin_data(2dim).xlsx')
-    pd.DataFrame(predict_data).to_excel('data\\lstm_result(2dim).xlsx')
-    pd.DataFrame(label_data[1:] - predict_data[:-1]).to_excel('data\\lstm_residual(2dim).xlsx')###########改
+        plt.savefig('./data/png_result_vmd_res/vmd_res.png', bbox_inches='tight')
+        #plt.show()
+    print('------------------------------------------------------------->')
+    print(config.feature_columns[0])
+    pd.DataFrame(label_data).to_excel('data\\data_emd\\lstm_origin_data{}.xlsx'.format(config.feature_columns[0]))#不用写入了 已经写了很多了
+    pd.DataFrame(predict_data).to_excel('data\\data_emd\\lstm_result(imfs{}).xlsx'.format(config.feature_columns[0]))
+    label_data = label_data[1:]
+    predict_data = predict_data[:-1]
+    pd.DataFrame(label_data - predict_data).to_excel('data\\data_emd\\lstm_residual(imfs{}).xlsx'.format(config.feature_columns[0]))#########改
     print('rmse:{}'.format(RMSE(label_data , predict_data)))
 def RMSE(real , pred):
     sum = 0
@@ -265,16 +268,13 @@ def main(config):
         if config.do_predict:
             test_X, test_Y = data_gainer.get_test_data(return_label_data=True)
             pred_result = predict(config, test_X)       # 这里输出的是未还原的归一化预测数据
-            print('预测下一点结果为：{}'.format(pred_result[-1]))
-            print('########################')
-            print(test_X.shape)
-            print(len(pred_result))
+            # print('########################')
+            # print(test_X.shape)
+            # print(len(pred_result))
             draw(config, data_gainer, logger, pred_result)
 
     except Exception:
         logger.error("Run Error", exc_info=True)
-
-
 if __name__=="__main__":
     import argparse
     # argparse方便于命令行下输入参数，可以根据需要增加更多
@@ -289,5 +289,9 @@ if __name__=="__main__":
     for key in dir(args):               # dir(args) 函数获得args所有的属性
         if not key.startswith("_"):     # 去掉 args 自带属性，比如__name__等
             setattr(con, key, getattr(args, key))   # 将属性值赋给Config
-
-    main(con)
+    #main(con)
+    for i in range(0,16):
+        print('--------------------{}----------'.format(i))
+        con.label_columns[0] = i
+        con.feature_columns[0] = i
+        main(con)

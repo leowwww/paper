@@ -1,12 +1,4 @@
 # -*- coding: UTF-8 -*-
-"""
-@author: hichenway
-@知乎: 海晨威
-@contact: lyshello123@163.com
-@time: 2020/5/9 17:00
-@license: Apache
-pytorch 模型
-"""
 
 import torch
 from torch.nn import Module, LSTM, Linear
@@ -130,6 +122,7 @@ def predict(config, test_X):
         pred_X, hidden_predict = model(data_X, hidden_predict)
         # if not config.do_continue_train: hidden_predict = None    # 实验发现无论是否是连续训练模式，把上一个time_step的hidden传入下一个效果都更好
         cur_pred = torch.squeeze(pred_X, dim=0)
+        print('cur_prd:{}'.format(cur_pred))
         result = torch.cat((result, cur_pred), dim=0)
 
     return result.detach().cpu().numpy()    # 先去梯度信息，如果在gpu要转到cpu，最后要返回numpy数据

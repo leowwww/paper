@@ -1,4 +1,3 @@
-from numpy.core.numeric import roll
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -34,15 +33,52 @@ def FA(real , pred):
     result = MAPE(real , pred)
 
 if __name__ == "__main__":
-    #########时间序列平稳性检验
-    '''df = pd.read_excel("Data_AgTD20210604.xlsx",usecols=[0,1,2,3,4],header= None)
+    ######################vmd处理后的统计检验
+    df = pd.read_excel("./data/vmd-imfs.xlsx",usecols=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],header= None)
+    for i in range(17):
+        data = np.array(df.iloc[:,i])
+        print(len(data))
+        print('{}adf检验：{}'.format(i , adfuller(data)))
+        print('{} 白噪声检验:{}'.format(i , ljbox(data)))
+        
+        time.sleep(5)
+    ###############################
+    ######################emd——>lstm之后的数据平稳性检验############## 编辑于2022-4-19
+    path ='E:\\项目\\论文实验\\stock_predict_with_LSTM-master\\data\\data_emd\\residual'
+    filelist = os.listdir(path)
+    for i in range(len(filelist)):
+        file_path = os.path.join(path , filelist[i])
+        data = np.array(pd.read_excel(file_path,usecols=[1]).iloc[:,0])
+        print('{}adf检验：{}'.format(filelist[i] , adfuller(data)))
+        #平稳的 完美
+    print('---------------------------------------------------------')
+    for i in range(len(filelist)):
+        file_path = os.path.join(path , filelist[i])
+        data = np.array(pd.read_excel(file_path,usecols=[1]).iloc[:,0])
+        print('{} 白噪声检验:{}'.format(filelist[i] , ljbox(data)))
+        #拒绝是白噪声 完美
+    exit(0)
+
+    ##############################
+    df = pd.read_excel("DATA_AU_TDX.xlsx",usecols=[0,1,2,3,4],header= None)
     df.columns = ['time','open','high','low','close']
     data_close = df.loc[: ,['close']]
     data_open = df.loc[: ,['open']]
     result = adf(data_close , data_open)
+
     print('open-closeADF检验：',result)
     print('openADF检验:',adfuller(np.array(data_open)))
     print('closeADF检验:',adfuller(np.array(data_close)))
+    close = []
+    data_close = np.array(data_close)
+    print(data_close[0][0])
+    for i in range(len(data_close) - 1):
+        close.append(np.array(data_close[i+1][0]))
+    print('close:',adfuller(close))
+    print(data_open.shape)
+    print('open-closeADF检验：',result)
+    #print('openADF检验:',adfuller(np.array(data_open)))
+    #print('closeADF检验:',adfuller(np.array(data_close)))
     data_close = np.array(data_close)
     data_close = data_close[:,0]
     data_open = np.array(data_open)
@@ -50,7 +86,7 @@ if __name__ == "__main__":
     data = []
     for i in range(len(data_open)):
         data.append(data_close[i] - data_open[i])
-    print('open-close白噪声:',white_noise(data))'''
+    print('open-close白噪声:',white_noise(data))
     ##############检验lstm的残差序列
     '''df = pd.read_excel('lstm_residual.xlsx',usecols=[1])
     data = np.array(df)
@@ -89,14 +125,6 @@ if __name__ == "__main__":
     ##########生成excel数据
     '''a = pd.DataFrame({'lstm':list(lstm_data[:,0]) , 'holt_winter':list(holt_winter[:,0]) , 'real_data':list(real_data[:,0])})
     a.to_excel('hybrid_data.xlsx')'''
-    '''for i in range (500):
-        a = i*100
-        k = (i+1)*100
-        plt.plot(real_data[a:k] , label = 'real_data')
-        plt.plot(lstm_data[a:k], label = 'lstm')
-        plt.plot(jiejie_data[a:k], label = 'hybrid_model')
-        plt.legend()
-        plt.show()'''
 
     plt.plot(real_data[:100] , label = 'real_data')
     plt.plot(lstm_data[:100], label = 'lstm')

@@ -1,0 +1,13 @@
+######预处理
+采用的是vmd
+
+
+######数据集的划分
+train:55669(前二十个没要)
+test:37120(前6个没要)
+all:9w
+lstm.train:0.6
+lstm.test:0.2之后得到残差将这一部分的值作为holt_winter的train，但是lstm预测时将剩下的0.4都预测了。
+holt_winter:使用剩下0.4中的0.2作为训练，预测也是要预测完的
+cnn:使用lstm_test的0.1和holt_winter的0.1作为训练
+test:最后的0.1是cnn的预测结果，也是整个模型的预测结果。

@@ -13,6 +13,10 @@ data_y = pd.read_excel('DATA_AU_TDX.xlsx',usecols=[1])
 data_y = np.array(data_y)
 data_y = data_y.flatten()[:64970] ########只对训练集进行滤波
 print(data_y.shape)
+data_y = data_y.flatten()
+print(data_y.shape)
+
+
 yy=fft(data_y) #快速傅里叶变换
 yreal = yy.real    # 获取实数部分
 yimag = yy.imag    # 获取虚数部分
@@ -31,9 +35,20 @@ exit(0)
 ############ifft 
 residul = data_y - test
 
+    if i == 0:
+        test_y[i] = 0
+test = ifft(test_y)
+import time
+'''for i in range(len(yf)):
+    print(yf[i])
+    time.sleep(1)'''
+############ifft
+
+
 
 
 plt.subplot(221)
+
 plt.plot(np.arange(100),data_y[0:100]) 
 plt.title('Original wave')
 
@@ -45,3 +60,16 @@ plt.subplot(223)
 plt.plot(np.arange(len(residul)),residul[:]) 
 plt.title('ifft wave')
 plt.show()
+
+plt.plot(np.arange(1000),data_y[0:1000]) 
+plt.title('Original wave')
+
+plt.subplot(222)
+plt.plot(np.arange(1000),test[0:1000]) 
+plt.title('ifft wave')
+
+plt.subplot(223)
+plt.plot(np.arange(len(yf)),np.log10(yf)) 
+plt.title('ifft wave')
+plt.show()  
+

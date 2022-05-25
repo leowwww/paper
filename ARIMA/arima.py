@@ -55,5 +55,47 @@ print(len(pred) , len(train))
 plt.plot(pred[:100] , label = 'predction')
 #plt.plot(train[:100] , label = 'real_train')
 plt.plot(test[:100] , label = 'real_test')
+from statsmodels.tsa.arima_model import ARIMA#statsmodels.tsa.arima.model 
+import matplotlib.pyplot as plt
+
+import time
+import numpy as np
+from statsmodels.graphics.tsaplots import plot_acf , plot_pacf
+def RMSE(real , pred):
+    sum = 0
+    for i in range(len(real)):
+        sum += (real[i] - pred[i])**2
+    return (sum/len(real))**0.5
+def MAPE(real , pred):
+    sum = 0 
+    for i in range(len(real)):
+        sum += abs((pred[i] - real[i]) / real[i])
+    return sum/len(real)
+def FA(real , pred):
+    result = MAPE(real , pred)
+series =read_excel('Data_AgTD20210604.xlsx',usecols=[1])
+print(len(series))
+split = int(len(series)*0.7)
+train = series.iloc[:split]
+test = series.iloc[split:]
+train = np.array(train)
+test = np.array(test)
+
+plot_acf(train , lags = 34)
+plt.show()
+plot_pacf(train , lags = 34)
+plt.show()
+model_fit = ARIMA(train, order=(1,1,1)).fit()
+resid = model_fit.resid
+plot_acf(resid , lags = 34)
+plt.show()
+plot_pacf(resid , lags = 34)
+plt.show()
+print('##############')
+pred = model_fit.forecast(len(test))
+print(pred[0])
+print(len(pred) , len(test))
+plt.plot(pred[0][:100] , label = 'predction')
+plt.plot(test[:100] , label = 'real')
 plt.legend()
 plt.show()
